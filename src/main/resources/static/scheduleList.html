@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>iMovie - Film Schedule</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+        <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+        <script>
+            $(document).ready(page(1, 10));
+
+            function page(pageNo, pageSize) {
+                var token = window.localStorage.getItem("token");
+                if (!token) {
+                    window.location.href = "login.html";
+                    return;
+                }
+
+                axios({
+                    method: 'get',
+                    url: '/api/schedules',
+                    params: { page: pageNo - 1, size: pageSize },
+                    data: {},
+                    headers: { 'Authorization': 'Bearer ' + token }
+                }).then(function(response) {
+                    console.log(response);
+                    var data = response.data;
+
+                    $('tbody').html('');
+
+                    if (!data.content || data.content.length === 0) {
+                        $('tbody').append('<tr><td colspan="7" style="text-align:center;">No schedules found</td></tr>');
+                        $('#pageNav').hide();
+                        return;
+                    }
+
+                    $.each(data.content, function(index, row) {
+                        var html = "<tr>";
+                        html = html + '<th scope="row">' + (index + 1 + (pageNo - 1) * pageSize) + '</th>';
+                        html = html + '<td>' + row.filmName + '</td>';
+                        html = html + '<td>' + row.theaterName + '</td>';
+                        html = html + '<td>' + (row.showTime || '') + '</td>';
+                        html = html + '<td>' + row.price + '</td>';
+                        html = html + '<td>' + row.availableQuota + '</td>';
+                        if (row.availableQuota > 0) {
+                            html = html + '<td><button class="btn btn-success btn-sm" onclick="buyTicket(' + row.id + ')">Buy Ticket</button></td>';
+                        } else {
+                            html = html + '<td><span class="label label-danger">Sold Out</span></td>';
+                        }
+                        html = html + '</tr>';
+                        $('tbody').append(html);
+                    });
+
+                    // Pagination
+                    var totalPage = data.totalPages;
+                    var hasData = data.content.length > 0;
+                    var pagerHtml = "";
+
+                    if (pageNo > 1 && hasData) {
+                        pagerHtml = "<li><a href='#' onclick='page(" + (pageNo - 1) + "," + pageSize + ")'>Previous</a></li>";
+                    } else {
+                        pagerHtml = "<li class='disabled'><a href='#'>Previous</a></li>";
+                    }
+
+                    if (pageNo < totalPage && hasData) {
+                        pagerHtml = pagerHtml + "<li><a href='#' onclick='page(" + (pageNo + 1) + "," + pageSize + ")'>Next</a></li>";
+                    } else {
+                        pagerHtml = pagerHtml + "<li class='disabled'><a href='#'>Next</a></li>";
+                    }
+
+                    $('.pager').html(pagerHtml);
+                    $('#pageNav').show();
+
+                }).catch(function(error) {
+                    console.log(error);
+                    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                        $('#message').text("Session expired, please login again.");
+                        $('#errorDlg').on('hide.bs.modal', function() {
+                            window.localStorage.clear();
+                            window.location.href = "login.html";
+                        });
+                        $('#errorDlg').modal({backdrop: 'static', keyboard: false});
+                    }
+                });
+            }
+
+            function buyTicket(scheduleId) {
+                $('#buyScheduleId').val(scheduleId);
+                $('#buyQuantity').val(1);
+                $('#buyDlg').modal({backdrop: 'static', keyboard: false});
+            }
+
+            function confirmBuy() {
+                var token = window.localStorage.getItem("token");
+                var scheduleId = parseInt($('#buyScheduleId').val());
+                var quantity = parseInt($('#buyQuantity').val());
+
+                if (!quantity || quantity < 1) {
+                    alert("Please enter a valid quantity");
+                    return;
+                }
+
+                axios({
+                    method: 'post',
+                    url: '/api/orders/buy',
+                    data: { scheduleId: scheduleId, quantity: quantity },
+                    headers: { 'Authorization': 'Bearer ' + token }
+                }).then(function(response) {
+                    console.log(response);
+                    $('#buyDlg').modal('hide');
+                    $('#message').text("Purchase successful!");
+                    $('#errorDlg').modal({backdrop: 'static', keyboard: false});
+                    page(1, 10);
+                }).catch(function(error) {
+                    console.log(error);
+                    var msg = error.response ? (error.response.data.error || "Purchase failed") : "Cannot connect to server";
+                    $('#buyDlg').modal('hide');
+                    $('#message').text(msg);
+                    $('#errorDlg').modal({backdrop: 'static', keyboard: false});
+                });
+            }
+
+            function logout() {
+                window.localStorage.clear();
+                window.location.href = "login.html";
+            }
+        </script>
+    </head>
+    <body>
+
+    <nav class="navbar navbar-default" role="navigation">
+        <div class="container-fluid">
+            <div>
+                <ul class="nav navbar-nav">
+                    <li><a href="orderList.html">My Orders</a></li>
+                    <li class="active"><a href="#">Schedule</a></li>
+                    <li><a href="salesSummary.html">Statistics</a></li>
+                    <li><a href="#" onclick="logout()">Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Film</th>
+                <th scope="col">Theater</th>
+                <th scope="col">Show Time</th>
+                <th scope="col">Price</th>
+                <th scope="col">Available</th>
+                <th scope="col">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <nav aria-label="..." id="pageNav">
+        <ul class="pager">
+        </ul>
+    </nav>
+
+    <!-- Buy Ticket Modal -->
+    <div class="modal fade" tabindex="-1" role="dialog" id="buyDlg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">Buy Ticket</h4>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="buyScheduleId">
+                    <div class="form-group">
+                        <label>Number of Tickets</label>
+                        <input type="number" class="form-control" id="buyQuantity" min="1" value="1">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="confirmBuy()">Buy Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error/Notice Modal -->
+    <div class="modal fade" tabindex="-1" role="dialog" id="errorDlg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">Notice</h4>
+                </div>
+                <div class="modal-body">
+                    <p id="message"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </body>
+</html>
