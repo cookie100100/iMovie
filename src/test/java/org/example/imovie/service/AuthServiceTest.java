@@ -3,6 +3,7 @@ package org.example.imovie.service;
 import org.example.imovie.dto.AuthResponse;
 import org.example.imovie.dto.LoginRequest;
 import org.example.imovie.dto.RegisterRequest;
+import org.example.imovie.dto.UserResponse;
 import org.example.imovie.entity.User;
 import org.example.imovie.security.JwtUtil;
 import org.example.imovie.service.impl.AuthService;
@@ -58,18 +59,15 @@ class AuthServiceTest {
     }
 
     @Test
-    void register_success_shouldReturnAuthResponse() {
+    void register_success_shouldReturnUserResponse() {
         when(userService.findByAccount("testuser")).thenReturn(Optional.empty());
         when(userService.saveUser(any(User.class))).thenReturn(savedUser);
-        when(jwtUtil.generateToken("testuser")).thenReturn("jwt-token");
 
-        AuthResponse response = authService.register(buildRegisterRequest());
+        UserResponse response = authService.register(buildRegisterRequest());
 
-        assertThat(response.getToken()).isEqualTo("jwt-token");
-        assertThat(response.getTokenType()).isEqualTo("Bearer");
-        assertThat(response.getUser().getAccount()).isEqualTo("testuser");
-        assertThat(response.getUser().getNickName()).isEqualTo("TestUser");
-        assertThat(response.getUser().getId()).isEqualTo(1L);
+        assertThat(response.getAccount()).isEqualTo("testuser");
+        assertThat(response.getNickName()).isEqualTo("TestUser");
+        assertThat(response.getId()).isEqualTo(1L);
     }
 
     @Test
@@ -81,7 +79,6 @@ class AuthServiceTest {
                 .hasMessageContaining("Account already exists");
 
         verify(userService, never()).saveUser(any());
-        verify(jwtUtil, never()).generateToken(any());
     }
 
     @Test

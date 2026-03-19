@@ -40,10 +40,8 @@
                     data: data
                 }).then(function(response){
                     console.log(response);
-                    window.localStorage.setItem("token", response.data.token);
-                    window.localStorage.setItem("user", JSON.stringify(response.data.user));
-                    alert("Register success!");
-                    window.location.href = "scheduleList.html";
+                    alert("Register success! Please login.");
+                    window.location.href = "login.html";
                 }).catch(function(error){
                     console.log(error);
                     var msg = "Register failed";

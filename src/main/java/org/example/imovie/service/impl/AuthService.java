@@ -17,7 +17,7 @@ public class AuthService {
         this.jwtUtil = jwtUtil;
     }
 
-    public AuthResponse register(RegisterRequest request) {
+    public UserResponse register(RegisterRequest request) {
         // Check if account already exists
         if (userService.findByAccount(request.getAccount()).isPresent()) {
             throw new RuntimeException("Account already exists: " + request.getAccount());
@@ -35,12 +35,7 @@ public class AuthService {
         // Save user (password will be hashed in UserServiceImpl)
         User savedUser = userService.saveUser(user);
 
-        // Generate JWT token
-        String token = jwtUtil.generateToken(savedUser.getAccount());
-
-        // Build response
-        UserResponse userResponse = toUserResponse(savedUser);
-        return new AuthResponse(token, userResponse);
+        return toUserResponse(savedUser);
     }
 
     public AuthResponse login(LoginRequest request) {

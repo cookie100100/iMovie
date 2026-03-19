@@ -43,13 +43,16 @@ class AuthControllerTest {
                 .build();
     }
 
+    private UserResponse mockUserResponse() {
+        return new UserResponse(1L, "testuser", "TestUser", "M", "test@example.com", "1234567890");
+    }
+
     private AuthResponse mockAuthResponse() {
-        UserResponse userResponse = new UserResponse(1L, "testuser", "TestUser", "M", "test@example.com", "1234567890");
-        return new AuthResponse("jwt-token", userResponse);
+        return new AuthResponse("jwt-token", mockUserResponse());
     }
 
     @Test
-    void register_validRequest_shouldReturn200WithToken() throws Exception {
+    void register_validRequest_shouldReturn200WithUserInfo() throws Exception {
         RegisterRequest request = new RegisterRequest();
         request.setAccount("testuser");
         request.setPassword("password123");
@@ -58,15 +61,15 @@ class AuthControllerTest {
         request.setEmail("test@example.com");
         request.setPhone("1234567890");
 
-        when(authService.register(any())).thenReturn(mockAuthResponse());
+        when(authService.register(any())).thenReturn(mockUserResponse());
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("jwt-token"))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.user.account").value("testuser"));
+                .andExpect(jsonPath("$.account").value("testuser"))
+                .andExpect(jsonPath("$.nickName").value("TestUser"))
+                .andExpect(jsonPath("$.token").doesNotExist());
     }
 
     @Test

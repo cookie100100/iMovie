@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import org.example.imovie.dto.AuthResponse;
 import org.example.imovie.dto.LoginRequest;
 import org.example.imovie.dto.RegisterRequest;
+import org.example.imovie.dto.UserResponse;
 import org.example.imovie.service.impl.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,7 +23,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
 
