@@ -7,7 +7,7 @@ import lombok.Setter;
 import java.util.Date;
 
 @Entity
-@Table(name = "order")
+@Table(name = "t_order")
 @Getter
 @Setter
 public class Order {
@@ -24,10 +24,11 @@ public class Order {
 
     private Integer price;
 
-    private Integer quality;
+    @Column(name = "quality")
+    private Integer quantity;
 
     @ManyToOne
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "customer_id")
     private User user;
 
     @Enumerated(EnumType.STRING)

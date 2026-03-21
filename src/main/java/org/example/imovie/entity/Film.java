@@ -8,7 +8,7 @@ import java.util.Date;
 import java.util.List;
 
 @Entity
-@Table(name="film")
+@Table(name="t_film")
 @Getter
 @Setter
 public class Film {

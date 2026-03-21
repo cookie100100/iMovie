@@ -1,7 +1,10 @@
 package org.example.imovie.controller;
 
+import org.example.imovie.dto.RespCode;
+import org.example.imovie.dto.ResultJsonObject;
 import org.example.imovie.dto.SalesStatisticsResponse;
 import org.example.imovie.entity.Statistics;
+import org.example.imovie.exception.BusinessException;
 import org.example.imovie.service.StatisticsService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,21 +26,19 @@ public class StatisticsController {
     }
 
     @GetMapping
-    public ResponseEntity<List<SalesStatisticsResponse>> getAllStatistics() {
+    public ResponseEntity<ResultJsonObject> getAllStatistics() {
         List<SalesStatisticsResponse> stats = statisticsService.getAllStatistics()
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
-
-        return ResponseEntity.ok(stats);
+        return ResponseEntity.ok(ResultJsonObject.success(stats));
     }
 
     @GetMapping("/{scheduleId}")
-    public ResponseEntity<SalesStatisticsResponse> getStatisticsBySchedule(@PathVariable Integer scheduleId) {
+    public ResponseEntity<ResultJsonObject> getStatisticsBySchedule(@PathVariable("scheduleId") Integer scheduleId) {
         Statistics statistics = statisticsService.getByScheduleId(scheduleId)
-                .orElseThrow(() -> new RuntimeException("No statistics found for schedule: " + scheduleId));
-
-        return ResponseEntity.ok(toResponse(statistics));
+                .orElseThrow(() -> new BusinessException(RespCode.STATISTICS_NOT_FOUND));
+        return ResponseEntity.ok(ResultJsonObject.success(toResponse(statistics)));
     }
 
     private SalesStatisticsResponse toResponse(Statistics stats) {

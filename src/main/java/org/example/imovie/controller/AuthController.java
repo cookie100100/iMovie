@@ -1,10 +1,9 @@
 package org.example.imovie.controller;
 
 import jakarta.validation.Valid;
-import org.example.imovie.dto.AuthResponse;
 import org.example.imovie.dto.LoginRequest;
 import org.example.imovie.dto.RegisterRequest;
-import org.example.imovie.dto.UserResponse;
+import org.example.imovie.dto.ResultJsonObject;
 import org.example.imovie.service.impl.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,12 +22,12 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(authService.register(request));
+    public ResponseEntity<ResultJsonObject> register(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.ok(ResultJsonObject.success(authService.register(request)));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<ResultJsonObject> login(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(ResultJsonObject.success(authService.login(request)));
     }
 }

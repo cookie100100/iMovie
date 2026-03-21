@@ -3,11 +3,13 @@ package org.example.imovie.controller;
 import jakarta.validation.Valid;
 import org.example.imovie.dto.BuyTicketRequest;
 import org.example.imovie.dto.OrderResponse;
+import org.example.imovie.dto.RespCode;
+import org.example.imovie.dto.ResultJsonObject;
 import org.example.imovie.entity.Order;
 import org.example.imovie.entity.User;
+import org.example.imovie.exception.BusinessException;
 import org.example.imovie.service.OrderService;
 import org.example.imovie.service.UserService;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
@@ -27,41 +29,33 @@ public class OrderController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<OrderResponse>> getOrderList(
+    public ResponseEntity<ResultJsonObject> getOrderList(
             Authentication authentication,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
 
         User user = getCurrentUser(authentication);
 
-        Page<OrderResponse> orders = orderService.getOrderList(
-                user.getId(),
-                PageRequest.of(page, size, Sort.by("orderTime").descending())
-        ).map(this::toOrderResponse);
-
-        return ResponseEntity.ok(orders);
+        return ResponseEntity.ok(ResultJsonObject.success(
+                orderService.getOrderList(user.getId(), PageRequest.of(page, size, Sort.by("orderTime").descending()))
+                        .map(this::toOrderResponse)
+        ));
     }
 
     @PostMapping("/buy")
-    public ResponseEntity<OrderResponse> buyTicket(
+    public ResponseEntity<ResultJsonObject> buyTicket(
             Authentication authentication,
             @Valid @RequestBody BuyTicketRequest request) {
 
         User user = getCurrentUser(authentication);
-
-        Order order = orderService.saveOrder(
-                request.getScheduleId(),
-                user.getId(),
-                request.getQuantity()
-        );
-
-        return ResponseEntity.ok(toOrderResponse(order));
+        Order order = orderService.saveOrder(request.getScheduleId(), user.getId(), request.getQuantity());
+        return ResponseEntity.ok(ResultJsonObject.success(toOrderResponse(order)));
     }
 
     private User getCurrentUser(Authentication authentication) {
         String account = authentication.getName();
         return userService.findByAccount(account)
-                .orElseThrow(() -> new RuntimeException("User not found: " + account));
+                .orElseThrow(() -> new BusinessException(RespCode.USER_NOT_FOUND));
     }
 
     private OrderResponse toOrderResponse(Order order) {
@@ -72,9 +66,10 @@ public class OrderController {
                 order.getSchedule().getTheater().getName(),
                 order.getSchedule().getShowTime(),
                 order.getPrice(),
-                order.getQuality(),
+                order.getQuantity(),
                 order.getStatus().getMessage(),
-                order.getOrderTime()
+                order.getOrderTime(),
+                order.getPayTime()
         );
     }
 }

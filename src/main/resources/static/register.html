@@ -46,15 +46,15 @@
                     console.log(error);
                     var msg = "Register failed";
                     if (error.response && error.response.data) {
-                        if (error.response.data.details) {
+                        if (error.response.data.data) {
                             // Extract field-level validation errors
                             var errors = [];
-                            $.each(error.response.data.details, function(field, message) {
+                            $.each(error.response.data.data, function(field, message) {
                                 errors.push(field + ": " + message);
                             });
                             msg = errors.join("\n");
-                        } else if (error.response.data.error) {
-                            msg = error.response.data.error;
+                        } else if (error.response.data.message) {
+                            msg = error.response.data.message;
                         }
                     }
                     $('#message').text(msg);

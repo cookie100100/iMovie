@@ -1,7 +1,10 @@
 package org.example.imovie.controller;
 
+import org.example.imovie.dto.RespCode;
+import org.example.imovie.dto.ResultJsonObject;
 import org.example.imovie.dto.UserResponse;
 import org.example.imovie.entity.User;
+import org.example.imovie.exception.BusinessException;
 import org.example.imovie.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,9 +23,9 @@ public class UserController {
     }
 
     @GetMapping("/{account}")
-    public ResponseEntity<UserResponse> findByAccount(@PathVariable String account) {
+    public ResponseEntity<ResultJsonObject> findByAccount(@PathVariable("account") String account) {
         User user = userService.findByAccount(account)
-                .orElseThrow(() -> new RuntimeException("User not found with account: " + account));
+                .orElseThrow(() -> new BusinessException(RespCode.USER_NOT_FOUND));
 
         UserResponse response = new UserResponse(
                 user.getId(),
@@ -33,6 +36,6 @@ public class UserController {
                 user.getPhone()
         );
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ResultJsonObject.success(response));
     }
 }

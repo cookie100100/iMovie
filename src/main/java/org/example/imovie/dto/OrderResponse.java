@@ -19,4 +19,5 @@ public class OrderResponse {
     private Integer quantity;
     private String status;
     private Date orderTime;
+    private Date payTime;
 }

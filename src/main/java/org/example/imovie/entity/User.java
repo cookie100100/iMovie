@@ -1,5 +1,6 @@
 package org.example.imovie.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -9,8 +10,10 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.validator.constraints.Length;
 
+import java.util.List;
+
 @Entity
-@Table(name = "User")
+@Table(name = "t_customer")
 @Getter
 @Setter
 public class User {
@@ -19,17 +22,24 @@ public class User {
     private Long id;
 
     @NotBlank(message = "account cannot be blank")
-    @Length(min = 3, max = 20, message = "account length must be within 3-20 characters")
-    @Column(length = 20, unique = true)
+    @Length(min = 5, max = 20, message = "account length must be within 3-20 characters")
+    @Column(length = 20)
     private String account;
 
     @NotBlank(message = "password cannot be blank")
-    @Column(length = 100)
+    @Column(length = 32)
     private String password;
+
+    @Column(length = 20)
+    private String salt;
 
     @NotEmpty(message = "nickname cannot be empty")
     @Length(min = 2, max = 20, message = "nickname must be within 2-20 characters")
+    @Column(name = "alias")
     private String nickName;
+
+    @Column(name = "register_time")
+    private java.util.Date registerTime;
 
     @NotEmpty(message = "gender cannot be empty")
     @Pattern(regexp = "M|F", message = "gender can only be M or F")
@@ -43,4 +53,9 @@ public class User {
 
     @Column(length = 15)
     private String phone;
+
+    @OneToMany
+    @JoinColumn(name = "customer_id")
+    @JsonIgnore
+    private List<Order> orders;
 }

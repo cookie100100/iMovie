@@ -28,12 +28,12 @@
                     data: { account: account, password: password }
                 }).then(function(response){
                     console.log(response);
-                    window.localStorage.setItem("token", response.data.token);
-                    window.localStorage.setItem("user", JSON.stringify(response.data.user));
+                    window.localStorage.setItem("token", response.data.data.token);
+                    window.localStorage.setItem("user", JSON.stringify(response.data.data.user));
                     window.location.href = "scheduleList.html";
                 }).catch(function(error){
                     console.log(error);
-                    var msg = error.response ? (error.response.data.error || "Login failed") : "Cannot connect to server";
+                    var msg = error.response ? (error.response.data.message || "Login failed") : "Cannot connect to server";
                     $('#message').text(msg);
                     $('#errorDlg').modal({backdrop: 'static', keyboard: false});
                 });

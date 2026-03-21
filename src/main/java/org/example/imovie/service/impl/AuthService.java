@@ -2,6 +2,7 @@ package org.example.imovie.service.impl;
 
 import org.example.imovie.dto.*;
 import org.example.imovie.entity.User;
+import org.example.imovie.exception.BusinessException;
 import org.example.imovie.security.JwtUtil;
 import org.example.imovie.service.UserService;
 import org.springframework.stereotype.Service;
@@ -20,19 +21,25 @@ public class AuthService {
     public UserResponse register(RegisterRequest request) {
         // Check if account already exists
         if (userService.findByAccount(request.getAccount()).isPresent()) {
-            throw new RuntimeException("Account already exists: " + request.getAccount());
+            throw new BusinessException(RespCode.ACCOUNT_ALREADY_EXISTS);
         }
 
         // Map DTO to entity
         User user = new User();
         user.setAccount(request.getAccount());
-        user.setPassword(request.getPassword());
+        
+        // Generate salt and hash password
+        String salt = java.util.UUID.randomUUID().toString().substring(0, 8);
+        user.setSalt(salt);
+        user.setPassword(org.springframework.util.DigestUtils.md5DigestAsHex((request.getPassword() + salt).getBytes()));
+        
         user.setNickName(request.getNickName());
         user.setGender(request.getGender());
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
+        user.setRegisterTime(new java.util.Date());
 
-        // Save user (password will be hashed in UserServiceImpl)
+        // Save user
         User savedUser = userService.saveUser(user);
 
         return toUserResponse(savedUser);

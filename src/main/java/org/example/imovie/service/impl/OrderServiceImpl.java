@@ -1,11 +1,14 @@
 package org.example.imovie.service.impl;
 
+import org.example.imovie.dto.RespCode;
 import org.example.imovie.entity.*;
+import org.example.imovie.event.OrderEvent;
+import org.example.imovie.exception.BusinessException;
 import org.example.imovie.repository.OrderRepository;
 import org.example.imovie.repository.ScheduleRepository;
-import org.example.imovie.repository.StatisticsRepository;
 import org.example.imovie.repository.UserRepository;
 import org.example.imovie.service.OrderService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,16 +23,16 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final ScheduleRepository scheduleRepository;
     private final UserRepository userRepository;
-    private final StatisticsRepository statisticsRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public OrderServiceImpl(OrderRepository orderRepository,
-                            ScheduleRepository scheduleRepository,
-                            UserRepository userRepository,
-                            StatisticsRepository statisticsRepository) {
+            ScheduleRepository scheduleRepository,
+            UserRepository userRepository,
+            ApplicationEventPublisher eventPublisher) {
         this.orderRepository = orderRepository;
         this.scheduleRepository = scheduleRepository;
         this.userRepository = userRepository;
-        this.statisticsRepository = statisticsRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -37,15 +40,15 @@ public class OrderServiceImpl implements OrderService {
     public Order saveOrder(Integer scheduleId, Long userId, Integer ticketNum) {
         // Validate schedule
         Schedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new RuntimeException("Schedule not found with id: " + scheduleId));
+                .orElseThrow(() -> new BusinessException(RespCode.SCHEDULE_NOT_FOUND));
 
         // Validate user
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+                .orElseThrow(() -> new BusinessException(RespCode.USER_NOT_FOUND));
 
         // Check available quota
         if (schedule.getQuota() < ticketNum) {
-            throw new RuntimeException("Not enough tickets available. Remaining: " + schedule.getQuota());
+            throw new BusinessException(RespCode.INSUFFICIENT_TICKETS);
         }
 
         // Decrement quota
@@ -57,28 +60,21 @@ public class OrderServiceImpl implements OrderService {
         order.setTicketNo(generateTicketNo());
         order.setSchedule(schedule);
         order.setPrice(schedule.getPrice() * ticketNum);
-        order.setQuality(ticketNum);
+        order.setQuantity(ticketNum);
         order.setUser(user);
         order.setStatus(OrderStatus.New);
         order.setOrderTime(new Date());
 
         Order savedOrder = orderRepository.save(order);
 
-        // Update statistics
-        Statistics statistics = statisticsRepository.findByScheduleId(scheduleId)
-                .orElseGet(() -> {
-                    Statistics newStats = new Statistics();
-                    newStats.setSchedule(schedule);
-                    newStats.setQuality(0);
-                    newStats.setAmount(0);
-                    return newStats;
-                });
-
-        statistics.setQuality(statistics.getQuality() + ticketNum);
-        statistics.setAmount(statistics.getAmount() + (schedule.getPrice() * ticketNum));
-        statisticsRepository.save(statistics);
+        // Notify observers
+        notifyObservers(scheduleId, ticketNum);
 
         return savedOrder;
+    }
+
+    private void notifyObservers(Integer scheduleId, Integer ticketNum) {
+        eventPublisher.publishEvent(new OrderEvent(this, scheduleId, ticketNum));
     }
 
     @Override

@@ -1,6 +1,8 @@
 package org.example.imovie.service.impl;
 
+import org.example.imovie.dto.RespCode;
 import org.example.imovie.entity.Schedule;
+import org.example.imovie.exception.BusinessException;
 import org.example.imovie.repository.ScheduleRepository;
 import org.example.imovie.service.ScheduleService;
 import org.springframework.data.domain.Page;
@@ -18,12 +20,12 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public Page<Schedule> findSchedules(Pageable pageable) {
-        return scheduleRepository.findAll(pageable);
+        return scheduleRepository.findAllWithDetails(pageable);
     }
 
     @Override
     public Schedule findById(Integer scheduleId) {
-        return scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new RuntimeException("Schedule not found with id: " + scheduleId));
+        return scheduleRepository.findByIdWithDetails(scheduleId)
+                .orElseThrow(() -> new BusinessException(RespCode.SCHEDULE_NOT_FOUND));
     }
 }

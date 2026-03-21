@@ -7,7 +7,7 @@ import lombok.Setter;
 import java.util.Date;
 
 @Entity
-@Table(name="schedule")
+@Table(name="t_schedule")
 @Getter
 @Setter
 public class Schedule {
@@ -29,4 +29,6 @@ public class Schedule {
 
     private Integer price;
 
+    @Version
+    private Integer version = 0;
 }

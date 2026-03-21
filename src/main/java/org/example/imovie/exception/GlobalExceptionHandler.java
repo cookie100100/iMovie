@@ -1,5 +1,7 @@
 package org.example.imovie.exception;
 
+import org.example.imovie.dto.RespCode;
+import org.example.imovie.dto.ResultJsonObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -14,32 +16,37 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ResultJsonObject> handleValidationErrors(MethodArgumentNotValidException ex) {
         Map<String, String> fieldErrors = new HashMap<>();
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
             fieldErrors.put(error.getField(), error.getDefaultMessage());
         }
+        return ResponseEntity.badRequest()
+                .body(ResultJsonObject.error(RespCode.VALIDATION_FAILED, fieldErrors));
+    }
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", HttpStatus.BAD_REQUEST.value());
-        response.put("error", "Validation failed");
-        response.put("details", fieldErrors);
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ResultJsonObject> handleBusinessException(BusinessException ex) {
+        return ResponseEntity.status(ex.getRespCode().getCode())
+                .body(ResultJsonObject.error(ex.getRespCode()));
+    }
 
-        return ResponseEntity.badRequest().body(response);
+    @ExceptionHandler(jakarta.persistence.OptimisticLockException.class)
+    public ResponseEntity<ResultJsonObject> handleOptimisticLockException(jakarta.persistence.OptimisticLockException ex) {
+        return ResponseEntity.status(RespCode.CONCURRENT_UPDATE.getCode())
+                .body(ResultJsonObject.error(RespCode.CONCURRENT_UPDATE));
+    }
+
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ResultJsonObject> handleObjectOptimisticLockingFailureException(
+            org.springframework.orm.ObjectOptimisticLockingFailureException ex) {
+        return ResponseEntity.status(RespCode.CONCURRENT_UPDATE.getCode())
+                .body(ResultJsonObject.error(RespCode.CONCURRENT_UPDATE));
     }
 
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", HttpStatus.BAD_REQUEST.value());
-        response.put("error", ex.getMessage());
-
-        HttpStatus status = HttpStatus.BAD_REQUEST;
-        if (ex.getMessage() != null && (ex.getMessage().contains("Invalid password") || ex.getMessage().contains("not found"))) {
-            status = HttpStatus.UNAUTHORIZED;
-            response.put("status", HttpStatus.UNAUTHORIZED.value());
-        }
-
-        return ResponseEntity.status(status).body(response);
+    public ResponseEntity<ResultJsonObject> handleRuntimeException(RuntimeException ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ResultJsonObject.error(500, ex.getMessage()));
     }
 }
